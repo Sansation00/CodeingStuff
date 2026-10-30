@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AL-Connect — Server Status</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f1117;color:#e8eaf0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+.icon{font-size:56px;margin-bottom:1.5rem}
+.icon.outage{color:#E24B4A;animation:pulse 2s infinite}
+.icon.offline{color:#555}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.title{font-size:24px;font-weight:500;margin-bottom:0.75rem}
+.title.outage{color:#F09595}
+.title.offline{color:#aaa}
+.desc{font-size:14px;color:#555;max-width:380px;line-height:1.7;margin-bottom:2rem}
+.card{background:#1a1d27;border:0.5px solid #2a2d3a;border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;width:100%;max-width:400px;text-align:left}
+.card.outage{border-color:#A32D2D}
+.card-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid #1f2230;font-size:13px}
+.card-row:last-child{border-bottom:none}
+.card-key{color:#555}
+.card-val{color:#aaa;font-weight:500}
+.card-val.red{color:#F09595}
+.card-val.green{color:#5DCAA5}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:8px 16px;border-radius:8px;text-decoration:none;border:none;cursor:pointer}
+.btn.primary{background:#1a1d27;color:#aaa;border:0.5px solid #2a2d3a}
+.btn.primary:hover{background:#1f2330;border-color:#3a3d4a}
+.back-link{margin-top:1rem;font-size:12px;color:#444;text-decoration:none;display:flex;align-items:center;gap:4px}
+.back-link:hover{color:#666}
+.checking{color:#555;font-size:14px}
+</style>
+</head>
+<body>
+ 
+<div id="content">
+  <div class="checking"><i class="ti ti-loader" aria-hidden="true"></i> Checking server status...</div>
+</div>
+ 
+<script>
+async function check(){
+  // Step 1 — Is AL-1server itself up?
+  let serverUp = false;
+  try {
+    const r = await fetch('/api/server/health', {signal: AbortSignal.timeout(3000)});
+    const j = await r.json();
+    serverUp = j.success === true;
+  } catch {}
+
+  if(serverUp){
+    // AL-1server is up but service is down
+    showServiceOffline();
+    return;
+  }
+
+  // Step 2 — AL-1server is down, check UPS outage flag
+  try {
+    const r = await fetch('/ups/api/outage', {signal: AbortSignal.timeout(5000)});
+    const j = await r.json();
+    if(j.outage){
+      showOutage();
+    } else {
+      showOffline();
+    }
+  } catch {
+    showOffline();
+  }
+}
+
+
+async function getUpsStats(){
+  try {
+    const res = await fetch('/ups/api/status', {signal: AbortSignal.timeout(5000)});
+    const json = await res.json();
+    return json.data || null;
+  } catch { return null; }
+}
+function showServiceOffline(){
+  const path = window.location.pathname;
+  let service = 'Service';
+  if(path.includes('jellyfin')) service = 'Jellyfin';
+  else if(path.includes('audiobookshelf')) service = 'Audiobookshelf';
+  else if(path.includes('imageai')) service = 'Image AI';
+  else if(path.includes('seerr')) service = 'Seerr';
+
+  document.getElementById('content').innerHTML = `
+    <div class="icon offline"><i class="ti ti-plug-off" aria-hidden="true"></i></div>
+    <div class="title offline">${service} is offline</div>
+    <p class="desc">AL-1Server is running but ${service} is not currently active. It may need to be started manually.</p>
+    <div class="card">
+      <div class="card-row"><span class="card-key">AL-1Server</span><span class="card-val green">Online</span></div>
+      <div class="card-row"><span class="card-key">${service}</span><span class="card-val">Not running</span></div>
+      <div class="card-row"><span class="card-key">Action required</span><span class="card-val">Start ${service}</span></div>
+    </div>
+    <a class="btn primary" href="/dashboard"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back to dashboard</a>
+  `;
+  setTimeout(check, 15000);
+}
+
+
+async function showOutage(){
+  const ups = await getUpsStats();
+  const charge = ups ? ups.battery_charge+'%' : '--';
+  const runtime = ups ? Math.round(parseInt(ups.battery_runtime)/60)+'min' : '--';
+  const status = ups ? ups.status : '--';
+ 
+  document.getElementById('content').innerHTML = `
+    <div class="icon outage"><i class="ti ti-alert-triangle" aria-hidden="true"></i></div>
+    <div class="title outage">Power outage detected</div>
+    <p class="desc">AL-1Server is running on UPS battery power. It will automatically shut down to protect your data.</p>
+    <div class="card outage">
+      <div class="card-row"><span class="card-key">UPS status</span><span class="card-val red">${status}</span></div>
+      <div class="card-row"><span class="card-key">Battery</span><span class="card-val red">${charge}</span></div>
+      <div class="card-row"><span class="card-key">Runtime left</span><span class="card-val red">${runtime}</span></div>
+      <div class="card-row"><span class="card-key">AL-1Server</span><span class="card-val red">Shutting down</span></div>
+    </div>
+    <a class="btn primary" href="/dashboard"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back to dashboard</a>
+    <a class="back-link" href="/ups"><i class="ti ti-bolt" aria-hidden="true"></i> View UPS monitor</a>
+  `;
+ 
+  // Auto refresh every 10 seconds
+  setTimeout(check, 10000);
+}
+ 
+function showOffline(){
+  document.getElementById('content').innerHTML = `
+    <div class="icon offline"><i class="ti ti-server-off" aria-hidden="true"></i></div>
+    <div class="title offline">Server is offline</div>
+    <p class="desc">AL-1Server is currently powered off. Mains power is available — the server needs to be turned on manually.</p>
+    <div class="card">
+      <div class="card-row"><span class="card-key">Power</span><span class="card-val green">Mains available</span></div>
+      <div class="card-row"><span class="card-key">AL-1Server</span><span class="card-val">Powered off</span></div>
+      <div class="card-row"><span class="card-key">Action required</span><span class="card-val">Manual power on</span></div>
+    </div>
+    <a class="btn primary" href="/dashboard"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back to dashboard</a>
+  `;
+ 
+  // Recheck every 15 seconds in case server comes back
+  setTimeout(check, 15000);
+}
+ 
+check();
+</script>
+</body>
+</html>

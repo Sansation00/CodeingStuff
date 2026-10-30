@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UPS Monitor</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: system-ui,sans-serif;
+            background: #0f1117;
+            color: #e8eaf0;
+            min-height: 100vh;
+            padding: 2rem
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+            .topbar-left h1 {
+                font-size: 18px;
+                font-weight: 500;
+                color: #e8eaf0
+            }
+
+            .topbar-left span {
+                font-size: 12px;
+                color: #666;
+                background: #1a1d27;
+                padding: 3px 10px;
+                border-radius: 20px;
+                border: 0.5px solid #2a2d3a
+            }
+
+        .refresh-btn {
+            font-size: 12px;
+            color: #666;
+            background: none;
+            border: 0.5px solid #2a2d3a;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            border-radius: 8px
+        }
+
+            .refresh-btn:hover {
+                background: #1a1d27;
+                color: #aaa
+            }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            width: 100%
+        }
+
+            .status-pill.online {
+                background: #0d2114;
+                border: 0.5px solid #1D9E75;
+                color: #5DCAA5
+            }
+
+            .status-pill.onbatt_high {
+                background: #2a1d00;
+                border: 0.5px solid #BA7517;
+                color: #EF9F27
+            }
+
+            .status-pill.onbatt_low {
+                background: #200d0d;
+                border: 0.5px solid #A32D2D;
+                color: #F09595
+            }
+
+            .status-pill.error {
+                background: #200d0d;
+                border: 0.5px solid #A32D2D;
+                color: #F09595
+            }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+
+            .dot.online {
+                background: #1D9E75
+            }
+
+            .dot.onbatt_high {
+                background: #BA7517
+            }
+
+            .dot.onbatt_low {
+                background: #E24B4A
+            }
+
+            .dot.error {
+                background: #E24B4A
+            }
+
+        .status-time {
+            margin-left: auto;
+            font-size: 12px;
+            font-weight: 400;
+            opacity: 0.6
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+            gap: 10px;
+            margin-bottom: 1.5rem
+        }
+
+        .metric {
+            background: #1a1d27;
+            border: 0.5px solid #2a2d3a;
+            border-radius: 12px;
+            padding: 1rem
+        }
+
+        .metric-icon {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 8px
+        }
+
+        .metric-val {
+            font-size: 26px;
+            font-weight: 500;
+            color: #e8eaf0;
+            line-height: 1
+        }
+
+        .metric-unit {
+            font-size: 13px;
+            color: #555;
+            font-weight: 400
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: #555;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em
+        }
+
+        .bars {
+            background: #1a1d27;
+            border: 0.5px solid #2a2d3a;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem
+        }
+
+        .bar-row {
+            margin-bottom: 1rem
+        }
+
+            .bar-row:last-child {
+                margin-bottom: 0
+            }
+
+        .bar-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 6px
+        }
+
+            .bar-meta span:last-child {
+                color: #aaa;
+                font-weight: 500
+            }
+
+        .bar-track {
+            background: #0f1117;
+            border-radius: 4px;
+            height: 6px;
+            overflow: hidden
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease
+        }
+
+            .bar-fill.green {
+                background: #1D9E75
+            }
+
+            .bar-fill.blue {
+                background: #378ADD
+            }
+
+            .bar-fill.amber {
+                background: #BA7517
+            }
+
+            .bar-fill.red {
+                background: #E24B4A
+            }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px
+        }
+
+        .info-card {
+            background: #1a1d27;
+            border: 0.5px solid #2a2d3a;
+            border-radius: 12px;
+            padding: 1.25rem
+        }
+
+        .info-card-title {
+            font-size: 11px;
+            color: #444;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 12px
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 0.5px solid #1f2230
+        }
+
+            .info-row:last-child {
+                border-bottom: none
+            }
+
+        .info-key {
+            font-size: 12px;
+            color: #555
+        }
+
+        .info-val {
+            font-size: 12px;
+            color: #aaa;
+            font-weight: 500
+        }
+
+        .err {
+            background: #200d0d;
+            border: 0.5px solid #A32D2D;
+            border-radius: 10px;
+            padding: 1rem;
+            color: #F09595;
+            font-size: 13px;
+            margin-bottom: 1rem;
+            display: none
+        }
+
+        /* Emergency banner */
+        .emergency-banner {
+            display: none;
+            background: #200d0d;
+            border: 1.5px solid #E24B4A;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            animation: pulse-border 1.5s infinite;
+        }
+
+            .emergency-banner.active {
+                display: block
+            }
+
+        .emergency-banner-shutoff {
+            display: none;
+            background: #200d0d;
+            border: 1.5px solid #E24B4A;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            animation: pulse-border 1.5s infinite;
+        }
+
+            .emergency-banner-shutoff.active {
+                display: block
+            }
+
+        @keyframes pulse-border {
+            0% {
+                border-color: #E24B4A
+            }
+
+            50% {
+                border-color: #791F1F
+            }
+
+            100% {
+                border-color: #E24B4A
+            }
+        }
+
+        .emergency-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px
+        }
+
+        .emergency-icon {
+            font-size: 28px;
+            color: #E24B4A;
+            animation: pulse-icon 1s infinite
+        }
+
+        @keyframes pulse-icon {
+            0% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.4
+            }
+
+            100% {
+                opacity: 1
+            }
+        }
+
+        .emergency-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #F09595
+        }
+
+        .emergency-text {
+            font-size: 13px;
+            color: #A32D2D;
+            line-height: 1.6
+        }
+
+        .emergency-battery {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-top: 12px
+        }
+
+        .emergency-battery-val {
+            font-size: 32px;
+            font-weight: 500;
+            color: #E24B4A
+        }
+
+        .emergency-battery-label {
+            font-size: 13px;
+            color: #791F1F
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="topbar-left">
+            <i class="ti ti-bolt" aria-hidden="true" style="font-size:20px;color:#555"></i>
+            <h1>UPS monitor</h1>
+            <span id="model-badge">APC</span>
+        </div>
+        <button class="refresh-btn" onclick="loadData()" aria-label="Refresh">
+            <i class="ti ti-refresh" id="ri" style="font-size:14px"></i> refresh
+        </button>
+    </div>
+
+    <div id="err" class="err"></div>
+
+    <!-- Emergency banner -->
+    <div id="emergency-banner" class="emergency-banner">
+        <div class="emergency-top">
+            <i class="ti ti-alert-triangle emergency-icon" aria-hidden="true"></i>
+            <span class="emergency-title">Power outage detected</span>
+        </div>
+        <div class="emergency-text">Main power has been lost. The system is running on UPS battery power. <span class="emergency-banner-val" id="eb">AL-1Server will shut down at 80% battery.</span> The Raspberry Pi will shut down at 10% battery.</div>
+        <div class="emergency-battery">
+            <span class="emergency-battery-val" id="emergency-charge">--</span>
+            <span class="emergency-battery-label">% battery remaining · <span id="emergency-runtime">--</span> min left</span>
+        </div>
+    </div>
+
+    <!-- Emergency banner shutoff -->
+    <div id="emergency-banner-shutoff" class="emergency-banner-shutoff">
+        <div class="emergency-top">
+            <i class="ti ti-alert-triangle emergency-icon" aria-hidden="true"></i><i class="ti ti-alert-triangle emergency-icon" aria-hidden="true"></i><i class="ti ti-alert-triangle emergency-icon" aria-hidden="true"></i>
+            <span class="emergency-title">SHUT DOWN IMMINENT</span>
+        </div>
+        <div class="emergency-text">Main power has been lost for too long. The system will shutdown shortly</div>
+    </div>
+
+    <div id="status-pill" class="status-pill online">
+        <div id="dot" class="dot online"></div>
+        <span id="st">Connecting...</span>
+        <span id="ssub" class="status-time"></span>
+    </div>
+
+    <div class="metrics">
+        <div class="metric">
+            <div class="metric-icon"><i class="ti ti-battery" aria-hidden="true"></i></div>
+            <div class="metric-val" id="bc">--<span class="metric-unit">%</span></div>
+            <div class="metric-label">Battery</div>
+        </div>
+        <div class="metric">
+            <div class="metric-icon"><i class="ti ti-clock" aria-hidden="true"></i></div>
+            <div class="metric-val" id="rt">--<span class="metric-unit">min</span></div>
+            <div class="metric-label">Runtime left</div>
+        </div>
+        <div class="metric">
+            <div class="metric-icon"><i class="ti ti-plug" aria-hidden="true"></i></div>
+            <div class="metric-val" id="ld">--<span class="metric-unit">%</span></div>
+            <div class="metric-label">Load</div>
+        </div>
+        <div class="metric">
+            <div class="metric-icon"><i class="ti ti-activity" aria-hidden="true"></i></div>
+            <div class="metric-val" id="iv">--<span class="metric-unit">V</span></div>
+            <div class="metric-label">Input voltage</div>
+        </div>
+    </div>
+
+    <div class="bars">
+        <div class="bar-row">
+            <div class="bar-meta"><span>Battery charge</span><span id="cpct">--%</span></div>
+            <div class="bar-track"><div class="bar-fill green" id="cb" style="width:0%"></div></div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-meta"><span>Load</span><span id="lpct">--%</span></div>
+            <div class="bar-track"><div class="bar-fill blue" id="lb" style="width:0%"></div></div>
+        </div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="info-card-title">Device</div>
+            <div class="info-row"><span class="info-key">Model</span><span class="info-val" id="imodel">--</span></div>
+            <div class="info-row"><span class="info-key">Manufacturer</span><span class="info-val" id="imfr">--</span></div>
+            <div class="info-row"><span class="info-key">Firmware</span><span class="info-val" id="ifw">--</span></div>
+            <div class="info-row"><span class="info-key">Capacity</span><span class="info-val" id="icap">--</span></div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-title">Battery</div>
+            <div class="info-row"><span class="info-key">Voltage</span><span class="info-val" id="ibv">--</span></div>
+            <div class="info-row"><span class="info-key">Type</span><span class="info-val" id="ibt">--</span></div>
+            <div class="info-row"><span class="info-key">Beeper</span><span class="info-val" id="ibp">--</span></div>
+            <div class="info-row"><span class="info-key">Low threshold</span><span class="info-val" id="ibl">--</span></div>
+        </div>
+    </div>
+    
+    <div style="background:#1a1d27;border:0.5px solid #2a2d3a;border-radius:12px;padding:1.25rem;margin-top:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+        <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:0.07em">Weekly energy usage</div>
+        <div style="font-size:11px;color:#555" id="watt-total">-- kWh total</div>
+      </div>
+      <div style="font-size:12px;color:#1D9E75;margin-bottom:1rem" id="live-watts">-- W live</div>
+      <div id="watt-chart" style="display:flex;align-items:flex-end;gap:8px;height:80px"></div>
+      <div id="watt-labels" style="display:flex;gap:8px;margin-top:6px"></div>
+    </div>    
+    
+    <script>
+        function parseStatus(raw) {
+            if (!raw) return { label: 'Unknown', cls: 'error', sub: '' };
+            const s = raw.toUpperCase();
+            if (s.includes('OL') && s.includes('CHRG')) return { label: 'Online — charging', cls: 'online', sub: 'On mains power' };
+            if (s.includes('OL')) return { label: 'Online', cls: 'online', sub: 'On mains power' };
+            if (s.includes('OB')) return { label: 'On battery', cls: 'onbatt', sub: 'Mains power lost!' };
+            if (s.includes('LB')) return { label: 'Low battery — shutdown imminent', cls: 'error', sub: 'Critical' };
+            return { label: raw, cls: 'online', sub: '' };
+        }
+        function getAlertClass(val, type) {
+            if (type === 'text') return val < 80 ? 'AL-1Server has shut down' : 'AL-1Server will shut down at 80% battery.';
+            return 'err';
+        }
+        function getBarClass(val, type) {
+            if (type === 'charge') return val < 20 ? 'red' : val < 50 ? "amber" : 'green';
+            return 'blue';
+        }
+        async function loadData() {
+            const ri = document.getElementById('ri');
+            ri.style.opacity = '0.3';
+            try {
+                const res = await fetch('/ups/api/status');
+                const json = await res.json();
+                if (!json.success) throw new Error(json.error);
+                const d = json.data;
+                document.getElementById('err').style.display = 'none';
+
+                // Emergency banner
+                const banner = document.getElementById('emergency-banner');
+                if (json.outage) {
+                    banner.classList.add('active');
+                    document.getElementById('emergency-charge').textContent = d.battery_charge || '--';
+                    document.getElementById('emergency-runtime').textContent = Math.round(parseInt(d.battery_runtime) / 60) || '--';
+                } else {
+                    banner.classList.remove('active');
+                }
+                const charge = parseInt(d.battery_charge) || 0;
+                // Emergency banner Shutoff
+                const banners = document.getElementById('emergency-banner-shutoff');
+                if (json.outage && charge < 15) {
+                    banners.classList.add('active');
+                } else {
+                    banners.classList.remove('active');
+                }
+
+                //On battery or on main stat
+                const st = parseStatus(d.status);
+                var stat = '';
+                var statb = '';
+                if (st.cls == 'online') {
+                    stat = '';
+                } else { if (charge < 30) { stat = '_low' } else { stat = '_high' } }
+                const pill = document.getElementById('status-pill');
+                pill.className = 'status-pill ' + st.cls + stat;
+                document.getElementById('dot').className = 'dot ' + st.cls + stat;
+                if (stat == '_low') { statb = ' - Warning' } else { statb = '' }
+                document.getElementById('st').textContent = st.label + statb;
+                document.getElementById('ssub').textContent = 'Updated ' + new Date().toLocaleTimeString();
+                
+                const load = parseInt(d.load) || 0;
+                const runtime = Math.round(parseInt(d.battery_runtime) / 60);
+                document.getElementById('bc').innerHTML = charge + '<span class="metric-unit">%</span>';
+                document.getElementById('rt').innerHTML = runtime + '<span class="metric-unit">min</span>';
+                document.getElementById('ld').innerHTML = load + '<span class="metric-unit">%</span>';
+                document.getElementById('iv').innerHTML = (parseFloat(d.input_voltage) || '--') + '<span class="metric-unit">V</span>';
+                const cb = document.getElementById('cb');
+                cb.style.width = charge + '%';
+                cb.className = 'bar-fill ' + getBarClass(charge, 'charge');
+                document.getElementById('lb').style.width = load + '%';
+                document.getElementById('cpct').textContent = charge + '%';
+                document.getElementById('lpct').textContent = load + '%';
+                document.getElementById('model-badge').textContent = d.model || 'APC';
+                document.getElementById('imodel').textContent = d.model || '--';
+                document.getElementById('imfr').textContent = d.mfr || '--';
+                document.getElementById('ifw').textContent = d.firmware || '--';
+                document.getElementById('icap').textContent = d.real_power ? d.real_power + 'W' : '--';
+                document.getElementById('ibv').textContent = d.battery_voltage ? d.battery_voltage + 'V' : '--';
+                document.getElementById('ibt').textContent = d.battery_type || '--';
+                document.getElementById('ibp').textContent = d.beeper || '--';
+                document.getElementById('ibl').textContent = d.battery_charge_low ? d.battery_charge_low + '%' : '--';
+                document.getElementById('eb').textContent = getAlertClass(charge, 'text')
+
+            } catch (e) {
+                const eb = document.getElementById('err');
+                eb.style.display = 'block';
+                eb.textContent = 'Could not reach UPS API: ' + e.message;
+                document.getElementById('st').textContent = 'Disconnected';
+                document.getElementById('status-pill').className = 'status-pill error';
+                document.getElementById('dot').className = 'dot error';
+            }
+            ri.style.opacity = '1';
+        }
+        async function loadWattage(){
+          try {
+            const res = await fetch('/ups/api/wattage');
+            const json = await res.json();
+            if(!json.success) return;
+            const data = json.data;
+            const liveWatts = json.live_watts || 0;
+            const todayKwh = json.today_kwh || 0;
+            const liveLoad = json.live_load_pct || 0;
+            const max = Math.max(...data.map(d=>d.kwh), 0.001);
+            const total = data.reduce((s,d)=>s+d.kwh, 0);
+            const today = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
+            const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            const todayName = dayNames[new Date().getDay()];
+
+            document.getElementById('watt-total').textContent = total.toFixed(3) + ' kWh this week';
+
+            // Update today's bar with live data
+            const liveMax = Math.max(...data.map(d=>d.kwh), todayKwh, 0.001);
+
+            document.getElementById('watt-chart').innerHTML = data.map(d=>{
+              const isToday = d.day === todayName;
+              const kwh = isToday ? todayKwh : d.kwh;
+              const h = Math.max((kwh/liveMax)*80, kwh>0?4:2);
+              const color = isToday ? '#1D9E75' : '#2a2d3a';
+              const glowStyle = isToday ? 'box-shadow:0 0 8px #1D9E7588' : '';
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:80px">
+                <div title="${kwh.toFixed(4)} kWh" style="width:100%;height:${h}px;background:${color};border-radius:3px 3px 0 0;transition:height 0.8s ease;${glowStyle}"></div>
+              </div>`;
+            }).join('');
+
+            document.getElementById('watt-labels').innerHTML = data.map(d=>{
+              const isToday = d.day === todayName;
+              const kwh = isToday ? todayKwh : d.kwh;
+              return `<div style="flex:1;text-align:center;font-size:10px;color:${isToday?'#1D9E75':'#444'}">
+                ${d.day}<br>
+                <span style="color:${isToday?'#5DCAA5':'#333'}">${kwh>0?kwh.toFixed(3):'-'}</span>
+              </div>`;
+            }).join('');
+
+            // Update live wattage display
+            const liveEl = document.getElementById('live-watts');
+            if(liveEl) liveEl.textContent = liveWatts.toFixed(1) + 'W live · ' + todayKwh.toFixed(4) + ' kWh today';
+
+          } catch(e) {
+            console.error('Wattage error:', e);
+          }
+        }
+
+        loadData();
+        loadWattage();
+        setInterval(loadData, 5000);
+        setInterval(loadWattage, 5000);
+    </script>
+</body>
+</html>

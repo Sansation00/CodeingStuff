@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AL-Server Dashboard</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f1117;color:#e8eaf0;min-height:100vh;padding:2rem}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-left h1{font-size:20px;font-weight:500}
+.topbar-right{position: relative;}
+.badge{font-size:12px;color:#666;background:#1a1d27;padding:3px 10px;border-radius:20px;border:0.5px solid #2a2d3a}
+.refresh-btn{font-size:12px;color:#666;background:none;border:0.5px solid #2a2d3a;cursor:pointer;display:flex;align-items:auto;gap:4px;padding:6px 10px;border-radius:8px;position: absolute; top:0;right:0;}
+.refresh-btn:hover{background:#1a1d27;color:#aaa}
+.lu{font-size:11px;color:#333;text-align:right;position: absolute;right:0px;top:30px;white-space: nowrap;}
+.section-label{font-size:11px;color:#444;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:2rem}
+.services-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:2rem}
+.svc-card{background:#1a1d27;border:0.5px solid #2a2d3a;border-radius:12px;padding:1rem;text-decoration:none;display:block;transition:background 0.2s,border-color 0.2s}
+.svc-card:hover{background:#1f2330;border-color:#3a3d4a}
+.svc-card.online{border-left:2px solid #1D9E75}
+.svc-card.offline{border-left:2px solid #E24B4A}
+.svc-card.checking{border-left:2px solid #333}
+.svc-icon{font-size:20px;margin-bottom:8px}
+.svc-icon.blue{color:#378ADD}
+.svc-icon.teal{color:#1D9E75}
+.svc-icon.purple{color:#7F77DD}
+.svc-icon.amber{color:#EF9F27}
+.svc-name{font-size:13px;font-weight:500;color:#e8eaf0;margin-bottom:4px}
+.spill{display:flex;align-items:center;gap:4px;font-size:11px}
+.spill.online{color:#5DCAA5}
+.spill.offline{color:#F09595}
+.spill.checking{color:#555}
+.sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sdot.online{background:#1D9E75}
+.sdot.offline{background:#E24B4A;animation:blink 1s infinite}
+.sdot.checking{background:#444}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.servers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin-bottom:1.5rem}
+.srv-card{background:#1a1d27;border:0.5px solid #2a2d3a;border-radius:12px;padding:1.25rem}
+.srv-header{display:flex;align-items:center;gap:8px;margin-bottom:1rem;padding-bottom:1rem;border-bottom:0.5px solid #1f2230}
+.srv-dot{width:7px;height:7px;border-radius:50%;background:#1D9E75;flex-shrink:0}
+.srv-dot.offline{background:#E24B4A}
+.srv-name{font-size:14px;font-weight:500}
+.srv-meta{font-size:11px;color:#555;margin-left:auto}
+.stat-block{margin-bottom:12px}
+.stat-block:last-child{margin-bottom:0}
+.stat-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.stat-label{color:#555;display:flex;align-items:center;gap:4px}
+.stat-val{color:#aaa;font-weight:500}
+/* Sparkline graph */
+.graph-wrap{position:relative;height:48px;background:#0f1117;border-radius:6px;overflow:hidden;margin-bottom:4px}
+.graph-wrap canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+.graph-pct{position:absolute;bottom:4px;right:6px;font-size:10px;color:#555}
+/* Disk grid */
+.disk-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid #1f2230}
+.disk-item{background:#0f1117;border-radius:8px;padding:8px 10px}
+.disk-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.disk-label{font-size:11px;font-weight:500}
+.disk-pct{font-size:10px;color:#555}
+.disk-bar-track{background:#1a1d27;border-radius:3px;height:4px;overflow:hidden;margin-bottom:4px}
+.disk-bar-fill{height:100%;border-radius:3px;transition:width 0.6s ease}
+.disk-sizes{font-size:10px;color:#444}
+/* Net */
+.net-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid #1f2230}
+.net-item{background:#0f1117;border-radius:8px;padding:8px 10px}
+.net-label{font-size:10px;color:#444;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px}
+.net-val{font-size:13px;font-weight:500;color:#aaa}
+.offline-msg{font-size:13px;color:#555;text-align:center;padding:1.5rem 0}
+.pwr-btn{background:none;border:0.5px solid #2a2d3a;color:#666;cursor:pointer;padding:4px 8px;border-radius:6px;margin-left:8px;transition:background 0.2s,color 0.2s}
+.pwr-btn:hover{background:#2a1a1a;color:#E24B4A;border-color:#E24B4A}
+.pwr-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;align-items:center;justify-content:center}
+.pwr-modal-overlay.show{display:flex}
+.pwr-modal{background:#1a1d27;border:0.5px solid #2a2d3a;border-radius:12px;padding:1.5rem;width:280px}
+.pwr-modal h3{font-size:14px;font-weight:500;margin-bottom:4px}
+.pwr-modal p{font-size:12px;color:#666;margin-bottom:1rem}
+.pwr-actions{display:flex;flex-direction:column;gap:8px}
+.pwr-action-btn{background:#0f1117;border:0.5px solid #2a2d3a;color:#e8eaf0;padding:10px;border-radius:8px;font-size:13px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;transition:background 0.2s}
+.pwr-action-btn:hover{background:#22252f}
+.pwr-action-btn.danger:hover{background:#2a1a1a;color:#E24B4A}
+.pwr-password{width:100%;padding:8px 10px;border-radius:8px;border:0.5px solid #2a2d3a;background:#0f1117;color:#e8eaf0;font-size:12px;margin-bottom:8px;box-sizing:border-box}
+.pwr-confirm-row{display:flex;gap:8px;margin-top:0}
+.pwr-confirm-row button{flex:1;padding:8px;border-radius:8px;font-size:12px;cursor:pointer;border:0.5px solid #2a2d3a}
+.pwr-cancel{background:#0f1117;color:#aaa}
+.pwr-go{background:#E24B4A;color:#fff;border-color:#E24B4A!important}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <i class="ti ti-server" aria-hidden="true" style="font-size:22px;color:#555"></i>
+    <h1>AL-Connect</h1>
+    <span class="badge">dashboard</span>
+  </div>
+  <div class="topbar-right"> 
+   <button class="refresh-btn" onclick="refreshAll()" aria-label="Refresh">
+      <i class="ti ti-refresh" id="ri" style="font-size:14px"></i> refresh
+    </button>
+    <p class="lu" id="lu">checking...</p>
+  </div>
+</div>
+
+
+<div class="section-label">Services</div>
+<div class="services-grid" id="svc-grid"></div>
+
+<div class="section-label">Servers</div>
+<div class="servers-grid" id="srv-grid"></div>
+
+
+
+<div class="pwr-modal-overlay" id="pwr-overlay">
+  <div class="pwr-modal">
+    <h3 id="pwr-title">Server Power</h3>
+    <p>AL-1Server</p>
+    <div class="pwr-actions" id="pwr-choices">
+      <button class="pwr-action-btn" onclick="selectPower('poweron')"><i class="ti ti-power"></i> Power On</button>
+      <button class="pwr-action-btn" onclick="selectPower('restart')"><i class="ti ti-refresh"></i> Restart</button>
+      <button class="pwr-action-btn danger" onclick="selectPower('poweroff')"><i class="ti ti-power" style="color:#E24B4A"></i> Power Off</button>
+    </div>
+    <div id="pwr-confirm" style="display:none">
+      <input type="password" id="pwr-password" class="pwr-password" placeholder="Enter password" autocomplete="off">
+      <div class="pwr-confirm-row">
+        <button class="pwr-cancel" onclick="closePowerModal()">Cancel</button>
+        <button class="pwr-go" id="pwr-go-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SVCS=[
+  {id:'jellyfin',name:'Jellyfin',url:'/jellyfin',check:'/api/al1server/stats',icon:'ti-movie',color:'blue'},
+  {id:'abs',name:'Audiobookshelf',url:'/audiobookshelf',check:'/api/al1server/stats',icon:'ti-headphones',color:'teal'},
+  {id:'imageai',name:'Image AI',url:'/imageai/',check:'/api/imageai/health',icon:'ti-photo-ai',color:'purple'},
+  {id:'seerr',name:'Seerr',url:'http://seerr.al-1domain.stream',check:'/api/al1server/stats',icon:'ti-question-mark',color:'blue'},
+  {id:'sonarr',name:'Sonarr',url:'http://sonarr.al-connect.server',check:'/api/al1server/stats',icon:'ti-device-tv',color:'teal'},
+  {id:'radarr',name:'Radarr',url:'http://radarr.al-connect.server',check:'/api/al1server/stats',icon:'ti-video',color:'amber'},
+  {id:'jackett',name:'Jackett',url:'http://jackett.al-connect.server',check:'/api/al1server/stats',icon:'ti-search',color:'purple'},
+  {id:'qbit',name:'qBittorrent',url:'http://qbit.al-connect.server',check:'/api/al1server/stats',icon:'ti-download',color:'teal'},
+  {id:'ups',name:'UPS monitor',url:'/ups',check:'/ups/api/status',icon:'ti-bolt',color:'amber'}
+];
+
+
+const SRVS=[
+  {id:'pi',name:'Raspberry Pi 5',role:'Proxy · DNS · UPS',url:'/api/pi/stats',color:'#378ADD'},
+  {id:'al1',name:'AL-1Server',role:'Media · AI · Storage',url:'/api/al1server/stats',color:'#1D9E75'}
+];
+
+const ss={},sr={};
+// Store history for graphs: {pi:{cpu:[],mem:[]}, al1:{cpu:[],mem:[]}}
+const history={pi:{cpu:[],mem:[]},al1:{cpu:[],mem:[]}};
+const MAX_HISTORY=30;
+
+function fb(b){
+  if(b>1e12)return(b/1e12).toFixed(1)+'TB';
+  if(b>1e9)return(b/1e9).toFixed(1)+'GB';
+  if(b>1e6)return(b/1e6).toFixed(1)+'MB';
+  return(b/1e3).toFixed(0)+'KB';
+}
+function fu(s){
+  const d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60);
+  if(d>0)return d+'d '+h+'h up';
+  if(h>0)return h+'h '+m+'m up';
+  return m+'m up';
+}
+
+// Draw sparkline on a canvas element
+function drawSparkline(canvasId, data, color){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas || data.length < 2) return;
+  
+  // Get actual rendered size
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const W = rect.width || 200;
+  const H = rect.height || 48;
+  
+  // Only resize if needed
+  if(canvas.width !== W || canvas.height !== H){
+    canvas.width = W;
+    canvas.height = H;
+  }
+  
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  
+  const max = 100;
+  const step = W / (MAX_HISTORY - 1);
+  const points = data.map((v, i) => ({
+    x: i * step,
+    y: H - (Math.min(v, max) / max) * H
+  }));
+
+  // Fill
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, H);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(points[points.length-1].x, H);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, color + '44');
+  grad.addColorStop(1, color + '05');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+}
+
+// Update service cards without re-rendering (no flicker)
+function updateSvcCards(){
+  SVCS.forEach(s=>{
+    const card=document.getElementById('svc-'+s.id);
+    if(!card)return;
+    const st=ss[s.id]||'checking';
+    const lbl=st==='online'?'Online':st==='offline'?'Offline':'Checking';
+    card.className=`svc-card ${st}`;
+    const dot=card.querySelector('.sdot');
+    const pill=card.querySelector('.spill');
+    if(dot){dot.className=`sdot ${st}`;}
+    if(pill){pill.className=`spill ${st}`;pill.innerHTML=`<div class="sdot ${st}"></div>${lbl}`;}
+  });
+}
+
+// Update server cards without re-rendering
+function updateSrvCards(){
+  SRVS.forEach(s=>{
+    const d = sr[s.id];
+    const card = document.getElementById('srv-'+s.id);
+    if(!card) return;
+
+    const dot = card.querySelector('.srv-dot');
+    const meta = card.querySelector('.srv-meta');
+    const content = card.querySelector('.srv-content');
+
+    if(!d){
+      if(dot) dot.className = 'srv-dot offline';
+      // Only update if not already showing offline
+      if(content && !content.querySelector('.offline-msg')){
+        content.innerHTML = `<div class="offline-msg"><i class="ti ti-wifi-off" aria-hidden="true"></i> unreachable</div>`;
+      }
+      return;
+    }
+
+    if(dot) dot.className = 'srv-dot';
+    if(meta) meta.textContent = fu(d.uptime) + ' · ' + s.role;
+
+    // Update graphs
+    const h = history[s.id];
+    h.cpu.push(d.cpu);
+    h.mem.push(d.memory.percent);
+    if(h.cpu.length > MAX_HISTORY) h.cpu.shift();
+    if(h.mem.length > MAX_HISTORY) h.mem.shift();
+    drawSparkline('canvas-cpu-'+s.id, h.cpu, s.color);
+    drawSparkline('canvas-mem-'+s.id, h.mem, '#7F77DD');
+
+    const cpuVal = document.getElementById('cpu-val-'+s.id);
+    const memVal = document.getElementById('mem-val-'+s.id);
+    if(cpuVal) cpuVal.textContent = d.cpu.toFixed(1)+'%';
+    if(memVal) memVal.textContent = fb(d.memory.used)+' / '+fb(d.memory.total);
+
+    if(d.disks) buildDiskGrid(s.id, d.disks);
+
+    const nr = document.getElementById('net-recv-'+s.id);
+    const ns = document.getElementById('net-sent-'+s.id);
+    if(nr) nr.textContent = fb(d.network.bytes_recv);
+    if(ns) ns.textContent = fb(d.network.bytes_sent);
+  });
+}
+
+
+// Initial render — creates DOM structure once
+function initialRender(){
+  // Services
+  document.getElementById('svc-grid').innerHTML=SVCS.map(s=>`
+    <a class="svc-card checking" href="${s.url}" id="svc-${s.id}">
+      <div class="svc-icon ${s.color}"><i class="ti ${s.icon}" aria-hidden="true"></i></div>
+      <div class="svc-name">${s.name}</div>
+      <div class="spill checking"><div class="sdot checking"></div>Checking</div>
+    </a>`).join('');
+
+  // Servers
+  document.getElementById('srv-grid').innerHTML=SRVS.map(s=>`
+    <div class="srv-card" id="srv-${s.id}">
+      <div class="srv-header">
+        <div class="srv-dot offline"></div>
+        <span class="srv-name">${s.name}</span>
+        <span class="srv-meta" id="srv-meta-${s.id}">${s.role}</span>
+        ${s.id==='al1' ? `<button class="pwr-btn" onclick="openPowerModal()" aria-label="Power"><i class="ti ti-power" style="font-size:12px"></i></button>` : ''}
+      </div>
+      <div class="srv-content" id="srv-content-${s.id}">
+        <div class="stat-block">
+          <div class="stat-meta">
+            <span class="stat-label"><i class="ti ti-cpu" aria-hidden="true" style="font-size:12px"></i>CPU</span>
+            <span class="stat-val" id="cpu-val-${s.id}">--</span>
+          </div>
+          <div class="graph-wrap"><canvas id="canvas-cpu-${s.id}"></canvas><span class="graph-pct" id="cpu-val-${s.id}"></span></div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-meta">
+            <span class="stat-label"><i class="ti ti-database" aria-hidden="true" style="font-size:12px"></i>Memory</span>
+            <span class="stat-val" id="mem-val-${s.id}">--</span>
+          </div>
+          <div class="graph-wrap"><canvas id="canvas-mem-${s.id}"></canvas></div>
+        </div>
+        <div class="disk-grid" id="disk-grid-${s.id}"></div>
+        <div class="net-grid">
+          <div class="net-item"><div class="net-label">Net in</div><div class="net-val" id="net-recv-${s.id}">--</div></div>
+          <div class="net-item"><div class="net-label">Net out</div><div class="net-val" id="net-sent-${s.id}">--</div></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// Build disk grid once when first data arrives
+function buildDiskGrid(srvId, disks){
+  const grid=document.getElementById('disk-grid-'+srvId);
+  if(!grid||grid.children.length>0)return;
+  grid.innerHTML=disks.map((d,i)=>`
+    <div class="disk-item">
+      <div class="disk-header">
+        <span class="disk-label" style="color:${d.color}">${d.label}</span>
+        <span class="disk-pct" id="disk-pct-${srvId}-${i}">${d.percent.toFixed(1)}%</span>
+      </div>
+      <div class="disk-bar-track">
+        <div class="disk-bar-fill" id="disk-bar-${srvId}-${i}" style="width:${d.percent}%;background:${d.color}"></div>
+      </div>
+      <div class="disk-sizes" id="disk-sz-${srvId}-${i}">${fb(d.used)} / ${fb(d.total)}</div>
+    </div>`).join('');
+}
+
+let al1ServerOnline = false;
+
+async function chkAl1Server(){
+  try{
+    const r=await fetch('/api/al1server/stats',{signal:AbortSignal.timeout(5000)});
+    const j=await r.json();
+    al1ServerOnline = j.success === true;
+  }catch{
+    al1ServerOnline = false;
+  }
+}
+
+async function chkSvc(s){
+  try{
+    if(s.id==='imageai'){
+      const r=await fetch(s.check,{signal:AbortSignal.timeout(5000),redirect:'manual'});
+      ss[s.id]=(r.type==='opaqueredirect'||!r.ok)?'offline':'online';
+    } else if(s.id==='ups'){
+      const r=await fetch(s.check,{signal:AbortSignal.timeout(5000)});
+      const j=await r.json();
+      ss[s.id]=j.success?'online':'offline';
+    } else {
+      // Jellyfin and Audiobookshelf use shared AL-1server check
+      ss[s.id]=al1ServerOnline?'online':'offline';
+    }
+  }
+  catch{ss[s.id]='offline';}
+}
+
+async function refreshAll(){
+  const ri=document.getElementById('ri');
+  ri.style.opacity='0.3';
+  // Check AL-1server once, then use result for all services
+  await chkAl1Server();
+  await Promise.all([...SVCS.map(chkSvc),...SRVS.map(chkSrv)]);
+  updateSvcCards();
+  updateSrvCards();
+  document.getElementById('lu').textContent='Updated '+new Date().toLocaleTimeString();
+  ri.style.opacity='1';
+}
+
+
+async function chkSrv(s){
+  try{
+    const r=await fetch(s.url,{signal:AbortSignal.timeout(5000)});
+    const j=await r.json();
+    if(j.success){
+      sr[s.id]=j;
+      if(j.disks)buildDiskGrid(s.id,j.disks);
+    } else sr[s.id]=null;
+  }catch{sr[s.id]=null;}
+}
+
+let pendingAction = null;
+
+function openPowerModal(){
+  document.getElementById('pwr-overlay').classList.add('show');
+  document.getElementById('pwr-choices').style.display = 'flex';
+  document.getElementById('pwr-confirm').style.display = 'none';
+}
+
+function closePowerModal(){
+  document.getElementById('pwr-overlay').classList.remove('show');
+  document.getElementById('pwr-password').value = '';
+  pendingAction = null;
+}
+
+function selectPower(action){
+  pendingAction = action;
+  const labels = {poweron:'Power On', restart:'Restart', poweroff:'Power Off'};
+  document.getElementById('pwr-title').textContent = `Confirm: ${labels[action]}`;
+  document.getElementById('pwr-choices').style.display = 'none';
+  document.getElementById('pwr-confirm').style.display = 'block';
+  document.getElementById('pwr-password').value = '';
+  document.getElementById('pwr-password').focus();
+
+  const goBtn = document.getElementById('pwr-go-btn');
+  goBtn.onclick = async () => {
+    const pwd = document.getElementById('pwr-password').value;
+    if(!pwd){ alert('Password required'); return; }
+    goBtn.textContent = 'Working...';
+    goBtn.disabled = true;
+    try{
+      const r = await fetch(`/ups/api/power/${pendingAction}`, {
+        method:'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({password: pwd})
+      });
+      const j = await r.json();
+      alert(j.success ? `${labels[pendingAction]} sent successfully` : `Failed: ${j.error}`);
+    }catch(e){
+      alert('Request failed: '+e);
+    }
+    goBtn.textContent = 'Confirm';
+    goBtn.disabled = false;
+    closePowerModal();
+  };
+}
+
+document.getElementById('pwr-overlay')?.addEventListener('click', (e) => {
+  if(e.target.id === 'pwr-overlay') closePowerModal();
+});
+
+initialRender();
+refreshAll();
+setInterval(refreshAll,10000);
+</script>
+</body>
+</html>
